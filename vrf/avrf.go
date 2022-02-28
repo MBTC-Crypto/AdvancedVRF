@@ -62,7 +62,7 @@ func KeyGen(pp PublicParameter) (privkey, pubkey []byte, t *merkletree.MerkleTre
 			j++
 		}
 		// 3. X0t, X1t,...XNt j = t
-		fmt.Println(hex.EncodeToString(jRoot), hex.EncodeToString(r), strconv.Itoa(int(i)), strconv.Itoa(int(pp.t)))
+		//fmt.Println(hex.EncodeToString(jRoot), hex.EncodeToString(r), strconv.Itoa(int(i)), strconv.Itoa(int(pp.t)))
 		root, _ := Message{msg: hex.EncodeToString(jRoot) + hex.EncodeToString(r) + strconv.Itoa(int(i)) + strconv.Itoa(int(pp.t))}.CalculateHash()
 		rootList = append(rootList, Message{msg: hex.EncodeToString(root)})
 		i++
@@ -82,13 +82,27 @@ func KeyGen(pp PublicParameter) (privkey, pubkey []byte, t *merkletree.MerkleTre
 // Eval return VRF value and its accompanying proof pi
 func Eval(sk PrivateKey, pp PublicParameter) (vrfValue, proof []byte) {
 	var i int32 = 0
+	var xi0Arr, yValueArr []string
 	for i < pp.N {
 		// for r = sk
 		xi0, _ := Message{msg: hex.EncodeToString(sk) + strconv.Itoa(int(i))}.CalculateHash()
-		fmt.Println(xi0)
+		xi0Arr = append(xi0Arr, hex.EncodeToString(xi0))
+		var j int32 = 0
+		var yValue, _ = Message{msg: hex.EncodeToString(xi0)}.CalculateHash()
+		for j < pp.t {
+			exp := pp.t - 1 - j
+			var e int32 = 0
+			for e < exp-1 {
+				yValue, _ = Message{msg: hex.EncodeToString(yValue)}.CalculateHash()
+				e++
+			}
+			j++
+		}
+		yValueArr = append(yValueArr, hex.EncodeToString(yValue))
 		i++
 	}
-	return []byte("test"), []byte("test")
+	vrfValue, _ = Message{msg: strings.Join(yValueArr, "") + strings.Join(xi0Arr, "")}.CalculateHash()
+	return vrfValue, vrfValue
 }
 
 func (pkBytes PublicKey) Verify(msg, index, vrfValue, proof []byte) bool {
@@ -157,11 +171,11 @@ func main() {
 		log.Println("Verify Content:", vc)
 	}
 	fmt.Println("===================Eval===================")
-	//vrfValue, proof := Eval(sk, pp)
-	//fmt.Println(vrfValue, proof)
+	vrfValue, proof := Eval(sk, pp)
+	fmt.Println(vrfValue, proof)
 	// get the path list1[6] 1023
-	merklePath, index, err := tree.GetMerklePath(list1[0])
-	fmt.Println(merklePath, index, err)
+	//var mySlice = []byte{221, 198, 93, 198, 193, 72, 122, 206, 50, 201, 39, 194, 135, 48, 205, 170, 137, 159, 221, 253, 228, 84, 199, 185, 229, 120, 176, 59, 218, 129, 194, 249}
+	//data := binary.BigEndian.Uint32(mySlice)
 
 }
 
