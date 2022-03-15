@@ -95,34 +95,34 @@ func (sk PrivateKey) Eval(mu [32]byte, leaveHashes []*[sha256.Size]byte, i int32
 	return vrfValue, xi0, mb
 }
 
-func (pk PublicKey) Verify(mu [32]byte, i int32, vrfValue, vrfProof []byte, authPath *Branch) bool {
-	log.Println("PublicKey Verify: \n\tVrfValue:", hex.EncodeToString(vrfValue), " \n\tVrfProof:", hex.EncodeToString(vrfProof))
+func (pk PublicKey) Verify(mu [32]byte, leaveHashes []*[sha256.Size]byte, i int32, vrfValue, vrfProof []byte, mb *Branch) int {
+	log.Println("Output VrfValue:", hex.EncodeToString(vrfValue))
+	log.Println("Output VrfProof:", hex.EncodeToString(vrfProof))
 	vrfProof32 := [32]byte{}
 	copy(vrfProof32[:], vrfProof)
 	verifyMessage := hex.EncodeToString(ConcatDigests(&vrfProof32, &mu)[:])
 	newVrfValue, _ := Message{Msg: verifyMessage}.CalculateHash()
-	log.Println("newVrfValue:", hex.EncodeToString(newVrfValue))
+	log.Println("Output NewVrfValue:", hex.EncodeToString(newVrfValue))
 	res := bytes.Compare(newVrfValue, vrfValue)
 	if res == 0 {
-		log.Println("!..Slices are equal..!")
+		log.Println("NewVrfValue and VrfValue are equal!")
 	} else {
-		log.Println("!..Slice are not equal..!")
-		return false
+		log.Println("NewVrfValue and VrfValue are not equal!")
+		return 1
 	}
 	// Compare v == H(y,x)
-	log.Println("VRF Value:\n\tNewVrfValue", hex.EncodeToString(newVrfValue), "\n\tOrigVRFValue:", hex.EncodeToString(vrfValue))
+	log.Println("NewVrfValue", hex.EncodeToString(newVrfValue))
+	log.Println("OrigVRFValue:", hex.EncodeToString(vrfValue))
 	// Compute xi = H(y)
 	xi, _ := Message{Msg: hex.EncodeToString(vrfProof)}.CalculateHash()
-	log.Println("xi=====>", xi, hex.EncodeToString(xi))
+	log.Println("xi:", xi, hex.EncodeToString(xi))
 	// Compute Merkel root pk' by xi through AP, then compare pk' and pk
-	merkleRoot, _ := VerifyAuthPath(authPath)
-	log.Println("CalculateMerkleRoot", hex.EncodeToString(merkleRoot[:]))
-	rooRes := bytes.Compare(merkleRoot[:], pk)
-	if rooRes == 0 {
-		log.Println("pk and pk' are equal!")
-		return true
-	} else {
-		log.Println("pk and pk' are not equal!")
-		return false
-	}
+	authPathXi := CalculateAuthPath(leaveHashes, (*[32]byte)(xi))
+	authPathIndex := CalculateAuthPath(leaveHashes, leaveHashes[i])
+	authPathProof := mb
+	merkleRoot1, _ := VerifyAuthPath(authPathXi)
+	merkleRoot2, _ := VerifyAuthPath(authPathIndex)
+	merkleRoot3, _ := VerifyAuthPath(authPathProof)
+	log.Println(bytes.Compare(merkleRoot1[:], pk), bytes.Compare(merkleRoot2[:], pk), bytes.Compare(merkleRoot3[:], pk))
+	return bytes.Compare(merkleRoot1[:], pk)
 }

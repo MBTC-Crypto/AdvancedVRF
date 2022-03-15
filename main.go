@@ -69,10 +69,10 @@ func main() {
 		}
 		log.Println("Verify Content:", vc)
 	}
-	treePath, index, _ := tree.GetMerklePath(list1[8])
+	//treePath, index, _ := tree.GetMerklePath(list1[8])
 	//log.Println("merklePath", merklePath)
-	log.Println("Index", index)
-	log.Println("TreePath", treePath)
+	//log.Println("Index", index)
+	//log.Println("TreePath", treePath)
 	// 0 [1] 2^10 = 1024 1023 1111 2^10 - 1024
 	leavesHashArr := [1024]*[sha256.Size]byte{}
 	for i, leave := range tree.Leafs {
@@ -90,12 +90,12 @@ func main() {
 	copy(xHex32[:], xHex)
 	vrfValue, vrfProof, authPath := sk.Eval(xHex32, leavesHashArr[:], 1023)
 	log.Println("Output VRF Value", hex.EncodeToString(vrfValue))
-	log.Println("Output VRF Value", vrfValue)
+	log.Println("Output VRF Hex Value", vrfValue)
 	log.Println("Output VRF Proof", hex.EncodeToString(vrfProof))
 	//get the path list1[6] 1023
 	log.Println("===================pk.Verify===================")
 	//𝑦 is 𝑥𝑖,0 in above sk.Eval
-	output := pk.Verify(xHex32, 1023, vrfValue, vrfProof, authPath)
+	output := pk.Verify(xHex32, leavesHashArr[:], 1023, vrfValue, vrfProof, authPath)
 	log.Println("Verify result:", output)
 
 	//newHash := vrf.ConcatDigests((*[32]byte)(tree.Leafs[0].Hash), (*[32]byte)(tree.Leafs[1].Hash))
