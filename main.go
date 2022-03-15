@@ -100,4 +100,7 @@ func main() {
 
 	//newHash := vrf.ConcatDigests((*[32]byte)(tree.Leafs[0].Hash), (*[32]byte)(tree.Leafs[1].Hash))
 	//log.Println(*newHash)
+	pkvs, skvs := vrf.Keygen(pp)
+	fmt.Println("pkvs", pkvs)
+	log.Println("skvs", skvs)
 }

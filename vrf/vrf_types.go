@@ -3,6 +3,7 @@ package vrf
 import (
 	"crypto/sha256"
 	"github.com/cbergoon/merkletree"
+	"golang.org/x/crypto/sha3"
 )
 
 type Message struct {
@@ -107,4 +108,11 @@ type AuthPath struct {
 	bits        []byte
 	allHashes   []*[sha256.Size]byte
 	finalHashes []*[sha256.Size]byte
+}
+
+type Xof struct {
+	sh sha3.ShakeHash
+	// key is here to not make excess garbage during repeated calls
+	// to XORKeyStream.
+	key []byte
 }

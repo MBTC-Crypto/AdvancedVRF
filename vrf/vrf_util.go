@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"golang.org/x/crypto/sha3"
 	"math"
 )
 
@@ -13,6 +14,13 @@ func (m Message) CalculateHash() ([]byte, error) {
 		return nil, err
 	}
 	return h.Sum(nil), nil
+}
+
+func (m Message) CalculateShake() ([]byte, error) {
+	buf := []byte(m.Msg)
+	h := make([]byte, len(buf))
+	sha3.ShakeSum256(h, buf)
+	return h, nil
 }
 
 func ConcatDigests(hashes ...*[sha256.Size]byte) *[sha256.Size]byte {
