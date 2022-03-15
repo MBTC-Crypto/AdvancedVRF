@@ -81,3 +81,30 @@ func NewMerkleTree(data [][]byte) *MerkleTree {
 
 	return &mTree
 }
+
+// Branch is a cooked merkle authentication path that can be transmitted
+// over a wire and can be verified on the other end.
+type Branch struct {
+	NumLeaves uint32              // Nuber of leaves
+	Hashes    [][sha256.Size]byte // Merkle branch
+	Flags     []byte              // Bitmap of merkle tree
+}
+
+// MerkleBranch holds intermediate state while validating a merkle path.
+type MerkleBranch struct {
+	numLeaves uint32
+	bitsUsed  uint32
+	hashUsed  uint32
+	hashes    [][sha256.Size]byte
+	inHashes  [][sha256.Size]byte
+	bits      []byte
+}
+
+// AuthPath is used to house intermediate information needed to generate a Branch.
+type AuthPath struct {
+	numLeaves   uint32
+	matchedBits []byte
+	bits        []byte
+	allHashes   []*[sha256.Size]byte
+	finalHashes []*[sha256.Size]byte
+}

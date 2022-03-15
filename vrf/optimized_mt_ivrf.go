@@ -2,7 +2,9 @@ package vrf
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"github.com/cbergoon/merkletree"
 	"log"
 	"strconv"
@@ -48,7 +50,7 @@ func KeyGen(pp PublicParameter) (pubkey PublicKey, privkey PrivateKey, t *merkle
 			copy(jRoot32[:], jRoot)
 			//jRoot, _ = Message{Msg: hex.EncodeToString(jRoot) + strconv.Itoa(int(i)) + strconv.Itoa(int(j+1))}.CalculateHash()
 			jRootMessage := hex.EncodeToString(ConcatDigests(&jRoot32, &i32, &k32)[:])
-			log.Println(hex.EncodeToString(jRoot), jRootMessage, strconv.Itoa(int(i)), strconv.Itoa(int(j)))
+			//log.Println(hex.EncodeToString(jRoot), jRootMessage, strconv.Itoa(int(i)), strconv.Itoa(int(j)))
 			jRoot, _ = Message{Msg: jRootMessage}.CalculateHash()
 			j++
 		}
@@ -71,27 +73,35 @@ func KeyGen(pp PublicParameter) (pubkey PublicKey, privkey PrivateKey, t *merkle
 }
 
 // Eval return VRF value and its accompanying proof pi by given message x ∈ {0,1}^m(l)
-func (sk PrivateKey) Eval(x string, i, j int32, tree *merkletree.MerkleTree) (vrfValue, vrfProof []byte) {
-	log.Println("sk", hex.EncodeToString(sk))
+//  𝜇 is the VRF input/message
+func (sk PrivateKey) Eval(mu [32]byte, leaveHashes []*[sha256.Size]byte, i int32) (vrfValue, vrfProof []byte, mb *Branch) {
 	// Compute xi = Hash(r,i) for r = skv,
-	xi0, _ := Message{Msg: hex.EncodeToString(sk) + strconv.Itoa(int(i))}.CalculateHash()
-	// Compute y = H^(t-1-j)(xi,0)
-	yExp := 16 - 1 - j
-	var yValue, _ = Message{Msg: hex.EncodeToString(xi0)}.CalculateHash()
-	var e int32 = 1
-	for e < yExp {
-		yValue, _ = Message{Msg: hex.EncodeToString(yValue)}.CalculateHash()
-		e++
-	}
+	i32 := [32]byte{}
+	copy(i32[:], strconv.Itoa(int(i)))
+	rSk32 := [32]byte{}
+	copy(rSk32[:], sk)
+	concatMessage := hex.EncodeToString(ConcatDigests(&rSk32, &i32)[:])
+	xi0, _ := Message{Msg: concatMessage}.CalculateHash()
+	fmt.Println("x10", hex.EncodeToString(xi0))
 	// Compute v = PRF.Eval(x) = H(y,x)
-	vrfValue, _ = Message{Msg: hex.EncodeToString(yValue) + x}.CalculateHash()
-	log.Println("vrfValue:", vrfValue, " \nvrfProof:", yValue)
-	return vrfValue, yValue
+	xi032 := [32]byte{}
+	copy(xi032[:], xi0[:])
+	vMessage := hex.EncodeToString(ConcatDigests(&xi032, &mu)[:])
+	vrfValue, _ = Message{Msg: vMessage}.CalculateHash()
+	log.Println("vrfValue:", vrfValue, " \nvrfProof:", vMessage)
+	//return vrfValue, ConcatDigests(&xi032, &mu)[:]
+	log.Println("leavesHashArr", len(leaveHashes))
+	mb = CalculateAuthPath(leaveHashes, leaveHashes[i])
+	return vrfValue, xi0, mb
 }
 
-func (pk PublicKey) Verify(x string, i, j int32, vrfValue, vrfProof []byte) bool {
+func (pk PublicKey) Verify(mu [32]byte, i int32, vrfValue, vrfProof []byte, authPath *Branch) bool {
 	log.Println("PublicKey Verify: \n\tVrfValue:", hex.EncodeToString(vrfValue), " \n\tVrfProof:", hex.EncodeToString(vrfProof))
-	newVrfValue, _ := Message{Msg: hex.EncodeToString(vrfProof) + x}.CalculateHash()
+	vrfProof32 := [32]byte{}
+	copy(vrfProof32[:], vrfProof)
+	verifyMessage := hex.EncodeToString(ConcatDigests(&vrfProof32, &mu)[:])
+	newVrfValue, _ := Message{Msg: verifyMessage}.CalculateHash()
+	log.Println("newVrfValue:", hex.EncodeToString(newVrfValue))
 	res := bytes.Compare(newVrfValue, vrfValue)
 	if res == 0 {
 		log.Println("!..Slices are equal..!")
@@ -101,33 +111,18 @@ func (pk PublicKey) Verify(x string, i, j int32, vrfValue, vrfProof []byte) bool
 	}
 	// Compare v == H(y,x)
 	log.Println("VRF Value:\n\tNewVrfValue", hex.EncodeToString(newVrfValue), "\n\tOrigVRFValue:", hex.EncodeToString(vrfValue))
-	// Compute xit = H^(j+1)(y)
-	var iRootList []merkletree.Content
-	xi0, _ := Message{Msg: hex.EncodeToString(vrfProof)}.CalculateHash() // xi0\
-	var jRoot = xi0
-	iRootList = append(iRootList, Message{Msg: hex.EncodeToString(jRoot)})
-	//var T int32 = 16
-	var t int32 = 1
-	// t from 1 to 15
-	for t < j {
-		jRoot, _ = Message{Msg: hex.EncodeToString(jRoot)}.CalculateHash()
-		iRootList = append(iRootList, Message{Msg: hex.EncodeToString(jRoot)})
-		t++
+	// Compute xi = H(y)
+	xi, _ := Message{Msg: hex.EncodeToString(vrfProof)}.CalculateHash()
+	log.Println("xi=====>", xi, hex.EncodeToString(xi))
+	// Compute Merkel root pk' by xi through AP, then compare pk' and pk
+	merkleRoot, _ := VerifyAuthPath(authPath)
+	log.Println("CalculateMerkleRoot", hex.EncodeToString(merkleRoot[:]))
+	rooRes := bytes.Compare(merkleRoot[:], pk)
+	if rooRes == 0 {
+		log.Println("pk and pk' are equal!")
+		return true
+	} else {
+		log.Println("pk and pk' are not equal!")
+		return false
 	}
-	log.Println(len(iRootList))
-	// Construct a Merkle root'
-	iTree, err := merkletree.NewTree(iRootList)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	iRoot := iTree.MerkleRoot()
-	log.Println("Generated New Xi0:", hex.EncodeToString(xi0))
-	log.Println("Generated Merkle Root:", hex.EncodeToString(iRoot))
-	log.Println("Generated Public Key:", hex.EncodeToString(pk))
-	log.Println(len(iTree.Leafs))
-	//for it := 0; it < 16; it++ {
-	//	log.Println("iTree Tree Leave", hex.EncodeToString(iTree.Leafs[it].Hash), iTree.Leafs[it].C)
-	//}
-	return true
 }

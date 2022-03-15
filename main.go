@@ -2,6 +2,7 @@ package main
 
 import (
 	"AdvancedVRF/vrf"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"github.com/cbergoon/merkletree"
@@ -73,20 +74,30 @@ func main() {
 	log.Println("Index", index)
 	log.Println("TreePath", treePath)
 	// 0 [1] 2^10 = 1024 1023 1111 2^10 - 1024
-	for i, leave := range tree.Leafs[0:10] {
+	leavesHashArr := [1024]*[sha256.Size]byte{}
+	for i, leave := range tree.Leafs {
 		// Check two leaves have same parents
-		log.Println(i, hex.EncodeToString(leave.Parent.Hash))
+		//log.Println(i, leave.Hash)
+		leaveHash32 := [32]byte{}
+		copy(leaveHash32[:], leave.Hash)
+		leavesHashArr[i] = &leaveHash32
 	}
+	log.Println("PK", hex.EncodeToString(pk))
 	log.Println("===================sk.Eval===================")
-	x := "09a747437dc53affaaa65f9e2517876f3a7b892741891aa2d26a9fc5d07102ec"
-	vrfValue, vrfProof := sk.Eval(x, 980, 16, tree)
+	x := "98fd72ae39c7c93c089fbfed81316676b175f4b34f666733366895d2b293c74c"
+	xHex, _ := hex.DecodeString(x)
+	xHex32 := [32]byte{}
+	copy(xHex32[:], xHex)
+	vrfValue, vrfProof, authPath := sk.Eval(xHex32, leavesHashArr[:], 1023)
 	log.Println("Output VRF Value", hex.EncodeToString(vrfValue))
+	log.Println("Output VRF Value", vrfValue)
 	log.Println("Output VRF Proof", hex.EncodeToString(vrfProof))
 	//get the path list1[6] 1023
 	log.Println("===================pk.Verify===================")
-	output := pk.Verify(x, 980, 16, vrfValue, vrfProof)
+	//𝑦 is 𝑥𝑖,0 in above sk.Eval
+	output := pk.Verify(xHex32, 1023, vrfValue, vrfProof, authPath)
 	log.Println("Verify result:", output)
 
-	newHash := vrf.ConcatDigests((*[32]byte)(tree.Leafs[0].Hash), (*[32]byte)(tree.Leafs[1].Hash))
-	log.Println(*newHash)
+	//newHash := vrf.ConcatDigests((*[32]byte)(tree.Leafs[0].Hash), (*[32]byte)(tree.Leafs[1].Hash))
+	//log.Println(*newHash)
 }
