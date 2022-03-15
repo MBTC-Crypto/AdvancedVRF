@@ -1,0 +1,11 @@
+As we already know, the encryption and decryption processes is done by using a key. This block cipher uses a key that is 128 bits long for encryption and decryption of a message and is the least secure of the three blocks available.
+
+The AES-192 uses a key that is 192 bits long for the encryption and decryption of messages. It is more resistant to brute-force attacks as compared to AES-128 because it has a longer key, thereby more secure. Despite this, AES-192 is not commonly used, people tend to lean towards AES-256.
+
+The AES-256 uses a key that is 256 bits long for the encryption and decryption of messages. This block is more secure when compared to the AES-128 and AES-192 because of the long length of the encryption key.The longer the encryption key, the more difficult the algorithm is to hack. AES-256 is therefore very resistant to brute-force attacks when compared to the two previous blocks.
+
+AES being an asymmetric block cipher, means that the key used in encryption and decryption is a kept secret and is only made known to the sender and the recipient of the message.
+
+The key used when encrypting the message is usually the same key used to decrypt the message on the receiving end. When encrypting using AES, a person can either use AES-128, AES-192, or even the AES-256. During this encryption, some steps are followed to encrypt a message and these steps are done in rounds.
+
+Each round is made up of several steps of substitution, transposition, and mixing of the message into ciphertext and also has a key called a round key.
