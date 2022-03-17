@@ -86,7 +86,7 @@ func NewMerkleTree(data [][]byte) *MerkleTree {
 // Branch is a cooked merkle authentication path that can be transmitted
 // over a wire and can be verified on the other end.
 type Branch struct {
-	NumLeaves uint32              // Nuber of leaves
+	NumLeaves uint32              // Number of leaves
 	Hashes    [][sha256.Size]byte // Merkle branch
 	Flags     []byte              // Bitmap of merkle tree
 }

@@ -84,23 +84,29 @@ func main() {
 	}
 	log.Println("PK", hex.EncodeToString(pk))
 	log.Println("===================sk.Eval===================")
-	x := "98fd72ae39c7c93c089fbfed81316676b175f4b34f666733366895d2b293c74c"
-	xHex, _ := hex.DecodeString(x)
-	xHex32 := [32]byte{}
-	copy(xHex32[:], xHex)
-	vrfValue, vrfProof, authPath := sk.Eval(xHex32, leavesHashArr[:], 1023)
+	x9 := "500172adfa38bb778b462a89463fa3fb249a6b1164c3422b4cb81d688524648f" // 1023 15
+	x9Hex, _ := hex.DecodeString(x9)
+	x9Hex32 := [32]byte{}
+	copy(x9Hex32[:], x9Hex)
+	vrfValue, vrfProof, authPath := sk.Eval(x9Hex32, leavesHashArr[:], 1023, 15)
 	log.Println("Output VRF Value", hex.EncodeToString(vrfValue))
 	log.Println("Output VRF Hex Value", vrfValue)
 	log.Println("Output VRF Proof", hex.EncodeToString(vrfProof))
 	//get the path list1[6] 1023
 	log.Println("===================pk.Verify===================")
 	//𝑦 is 𝑥𝑖,0 in above sk.Eval
-	output := pk.Verify(xHex32, leavesHashArr[:], 1023, vrfValue, vrfProof, authPath)
+	// 5f79a6037e15bddf142030a9d16ca9b8fd59c62b46a58ace8d88026f81ee96a5
+	// ad42879f0f32ed23bd619fb592df1f0cab1a60e3145a4d693baa2edd25e3ae26 1023 7
+	x7 := "ad42879f0f32ed23bd619fb592df1f0cab1a60e3145a4d693baa2edd25e3ae26"
+	x7Hex, _ := hex.DecodeString(x7)
+	x7Hex32 := [32]byte{}
+	copy(x7Hex32[:], x7Hex)
+	output := pk.Verify(x7Hex32, leavesHashArr[:], 1023, 7, vrfValue, vrfProof, authPath)
 	log.Println("Verify result:", output)
 
 	//newHash := vrf.ConcatDigests((*[32]byte)(tree.Leafs[0].Hash), (*[32]byte)(tree.Leafs[1].Hash))
 	//log.Println(*newHash)
-	pkvs, skvs := vrf.Keygen(pp)
-	fmt.Println("pkvs", pkvs)
-	log.Println("skvs", skvs)
+	//pkvs, skvs, _ := vrf.Keygen(pp)
+	//log.Println("pkvs", pkvs)
+	//log.Println("skvs", skvs)
 }

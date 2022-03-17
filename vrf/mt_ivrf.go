@@ -74,7 +74,7 @@ func KeyGen(pp PublicParameter) (pubkey PublicKey, privkey PrivateKey, t *merkle
 
 // Eval return VRF value and its accompanying proof pi by given message x ∈ {0,1}^m(l)
 //  𝜇 is the VRF input/message
-func (sk PrivateKey) Eval(mu [32]byte, leaveHashes []*[sha256.Size]byte, i int32) (vrfValue, vrfProof []byte, mb *Branch) {
+func (sk PrivateKey) Eval(mu [32]byte, leaveHashes []*[sha256.Size]byte, i, j int32) (vrfValue, vrfProof []byte, ap *Branch) {
 	// Compute xi = Hash(r,i) for r = skv,
 	i32 := [32]byte{}
 	copy(i32[:], strconv.Itoa(int(i)))
@@ -87,15 +87,22 @@ func (sk PrivateKey) Eval(mu [32]byte, leaveHashes []*[sha256.Size]byte, i int32
 	xi032 := [32]byte{}
 	copy(xi032[:], xi0[:])
 	vMessage := hex.EncodeToString(ConcatDigests(&xi032, &mu)[:])
-	vrfValue, _ = Message{Msg: vMessage}.CalculateHash()
-	log.Println("vrfValue:", vrfValue, " \nvrfProof:", vMessage)
+	//vrfValue, _ = Message{Msg: hex.EncodeToString(xi0)}.CalculateHash()
+	for (16 - 1 - j) > 0 {
+		xi0, _ = Message{Msg: hex.EncodeToString(xi0)}.CalculateHash()
+		j--
+	}
+	vrfValue = xi0
+	log.Println("vrfValue:", hex.EncodeToString(vrfValue), " \nvrfProof:", vMessage)
 	//return vrfValue, ConcatDigests(&xi032, &mu)[:]
 	log.Println("leavesHashArr", len(leaveHashes))
-	mb = CalculateAuthPath(leaveHashes, leaveHashes[i])
-	return vrfValue, xi0, mb
+	// xi : leaveHashes[i]
+	ap = CalculateAuthPath(leaveHashes, leaveHashes[i])
+	// mb : 10 hash values. only need 10 steps computations.
+	return vrfValue, xi0, ap
 }
 
-func (pk PublicKey) Verify(mu [32]byte, leaveHashes []*[sha256.Size]byte, i int32, vrfValue, vrfProof []byte, mb *Branch) int {
+func (pk PublicKey) Verify(mu [32]byte, leaveHashes []*[sha256.Size]byte, i, j int32, vrfValue, vrfProof []byte, ap *Branch) int {
 	log.Println("Output VrfValue:", hex.EncodeToString(vrfValue))
 	log.Println("Output VrfProof:", hex.EncodeToString(vrfProof))
 	vrfProof32 := [32]byte{}
@@ -113,16 +120,24 @@ func (pk PublicKey) Verify(mu [32]byte, leaveHashes []*[sha256.Size]byte, i int3
 	// Compare v == H(y,x)
 	log.Println("NewVrfValue", hex.EncodeToString(newVrfValue))
 	log.Println("OrigVRFValue:", hex.EncodeToString(vrfValue))
-	// Compute xi = H(y)
-	xi, _ := Message{Msg: hex.EncodeToString(vrfProof)}.CalculateHash()
-	log.Println("xi:", xi, hex.EncodeToString(xi))
+	// Compute xi = H^j+1(y)
+	var count int
+	for (j + 1) > 0 {
+		a, _ := Message{Msg: hex.EncodeToString(vrfProof32[:])}.CalculateHash()
+		copy(mu[:], a)
+		j--
+		count++
+	}
+	log.Println(hex.EncodeToString(mu[:]))
+	//xi, _ := Message{Msg: hex.EncodeToString(vrfProof)}.CalculateHash()
 	// Compute Merkel root pk' by xi through AP, then compare pk' and pk
-	authPathXi := CalculateAuthPath(leaveHashes, (*[32]byte)(xi))
-	authPathIndex := CalculateAuthPath(leaveHashes, leaveHashes[i])
-	authPathProof := mb
+	authPathXi := CalculateAuthPath(leaveHashes, &mu)
+	//authPathIndex := CalculateAuthPath(leaveHashes, leaveHashes[i])
+	//authPathProof := ap
 	merkleRoot1, _ := VerifyAuthPath(authPathXi)
-	merkleRoot2, _ := VerifyAuthPath(authPathIndex)
-	merkleRoot3, _ := VerifyAuthPath(authPathProof)
-	log.Println(bytes.Compare(merkleRoot1[:], pk), bytes.Compare(merkleRoot2[:], pk), bytes.Compare(merkleRoot3[:], pk))
+	//merkleRoot2, _ := VerifyAuthPath(authPathIndex)
+	//merkleRoot3, _ := VerifyAuthPath(authPathProof)
+
+	//log.Println(bytes.Compare(merkleRoot1[:], pk), bytes.Compare(merkleRoot2[:], pk), bytes.Compare(merkleRoot3[:], pk))
 	return bytes.Compare(merkleRoot1[:], pk)
 }
