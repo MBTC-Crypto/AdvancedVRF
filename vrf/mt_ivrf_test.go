@@ -57,6 +57,7 @@ func TestPrivateKey_Eval(t *testing.T) {
 		mu          [32]byte
 		leaveHashes []*[sha256.Size]byte
 		i           int32
+		j           int32
 	}
 	var tests []struct {
 		name         string
@@ -68,7 +69,7 @@ func TestPrivateKey_Eval(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotVrfValue, gotVrfProof, gotMb := tt.sk.Eval(tt.args.mu, tt.args.leaveHashes, tt.args.i)
+			gotVrfValue, gotVrfProof, gotMb := tt.sk.Eval(tt.args.mu, tt.args.leaveHashes, tt.args.i, tt.args.j)
 			if !reflect.DeepEqual(gotVrfValue, tt.wantVrfValue) {
 				t.Errorf("Eval() gotVrfValue = %v, want %v", gotVrfValue, tt.wantVrfValue)
 			}
@@ -87,6 +88,7 @@ func TestPublicKey_Verify(t *testing.T) {
 		mu          [32]byte
 		leaveHashes []*[sha256.Size]byte
 		i           int32
+		j           int32
 		vrfValue    []byte
 		vrfProof    []byte
 		mb          *Branch
@@ -99,7 +101,7 @@ func TestPublicKey_Verify(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.pk.Verify(tt.args.mu, tt.args.leaveHashes, tt.args.i, tt.args.vrfValue, tt.args.vrfProof, tt.args.mb); got != tt.want {
+			if got := tt.pk.Verify(tt.args.mu, tt.args.leaveHashes, tt.args.i, tt.args.j, tt.args.vrfValue, tt.args.vrfProof, tt.args.mb); got != tt.want {
 				t.Errorf("Verify() = %v, want %v", got, tt.want)
 			}
 		})
