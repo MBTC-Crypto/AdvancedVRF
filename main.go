@@ -5,10 +5,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/cbergoon/merkletree"
 	"log"
 	"reflect"
 	"strconv"
+
+	"github.com/cbergoon/merkletree"
 )
 
 func main() {
@@ -85,12 +86,15 @@ func main() {
 	//log.Println("Index", index)
 	//log.Println("TreePath", treePath)
 	// 0 [1] 2^10 = 1024 1023 1111 2^10 - 1024
+	log.Println(tree.Leafs)
 	leavesHashArr := [1024]*[sha256.Size]byte{}
-	for i, _ := range tree.Leafs {
+	for i, node := range tree.Leafs {
 		// Check two leaves have same parents
 		s := reflect.ValueOf(tree.Leafs[i].C)
 		leaveHash32 := [32]byte{}
 		decodeBytes, _ := hex.DecodeString(s.Interface().(vrf.Message).Msg)
+		log.Println(s.Interface().(vrf.Message).Msg, "===", hex.EncodeToString(node.Hash))
+		// copy(leaveHash32[:], hex.EncodeToString(node.Hash))
 		copy(leaveHash32[:], decodeBytes)
 		leavesHashArr[i] = &leaveHash32
 	}
@@ -102,7 +106,7 @@ func main() {
 	//log.Println(leavesHashArr[1023])
 	// 2de234baea20e96aeb604a008d049339c9b67da1bc64872b7703c498b383b673 996 16
 	// 3754d05c0a7ea22e80491b95efac123247ed06398027090496a1abac11e423d5 996 10
-	mu := "d084db3416cb1196b6bf7ee0e7383361096b9811bb5cb088dde7c453efd4a1ce" // 996 10
+	mu := "e0d4ee2f28307ba10d3284b1f35205e1f193779d5d9834e1e2c0f1343df8c3b0" // 1021 10
 	muHex, _ := hex.DecodeString(mu)
 	muHex32 := [32]byte{}
 	copy(muHex32[:], muHex)
@@ -135,4 +139,85 @@ func main() {
 	//		s := reflect.ValueOf(tree.Leafs[i].C)
 	//		log.Println(s.Interface().(vrf.Message).Msg)
 	//	}
+
+	log.Println(authPath.Hashes)
+	log.Println(vrf.Bytes2bits(authPath.Flags))
+	log.Println("Check Hash", hex.EncodeToString(leavesHashArr[1022][:]), hex.EncodeToString(leavesHashArr[1023][:]))
+	combinedMsg1 := vrf.ConcatDigests(leavesHashArr[1022], leavesHashArr[1023])
+	rootTmp1, _ := vrf.Message{Msg: hex.EncodeToString(combinedMsg1[:])}.CalculateHash()
+	log.Println(hex.EncodeToString(combinedMsg1[:]), rootTmp1, hex.EncodeToString(rootTmp1))
+	// 4f4db5d49f026d43a70330747c843307830bf9d9b1b42e5d5e8ccf40e4a05ff4
+	combinedMsg2 := vrf.ConcatDigests(leavesHashArr[1020], leavesHashArr[1021])
+	rootTmp2, _ := vrf.Message{Msg: hex.EncodeToString(combinedMsg2[:])}.CalculateHash()
+	log.Println("rootTmp2", hex.EncodeToString(combinedMsg2[:]), hex.EncodeToString(rootTmp2))
+	combinedMsg3 := vrf.ConcatDigests(leavesHashArr[1018], leavesHashArr[1019]) // 509
+	rootTmp3, _ := vrf.Message{Msg: hex.EncodeToString(combinedMsg3[:])}.CalculateHash()
+	log.Println(hex.EncodeToString(combinedMsg3[:]), hex.EncodeToString(rootTmp3))
+	combinedMsg4 := vrf.ConcatDigests(leavesHashArr[1016], leavesHashArr[1017]) // 508
+	rootTmp4, _ := vrf.Message{Msg: hex.EncodeToString(combinedMsg4[:])}.CalculateHash()
+	log.Println(hex.EncodeToString(combinedMsg4[:]), hex.EncodeToString(rootTmp4))
+
+	rt432 := [32]byte{}
+	copy(rt432[:], combinedMsg4[:])
+	rt332 := [32]byte{}
+	copy(rt332[:], combinedMsg3[:])
+	combinedMsg5 := vrf.ConcatDigests((*[32]byte)(combinedMsg4[:]), (*[32]byte)(combinedMsg3[:]))
+	rootTmp5, _ := vrf.Message{Msg: hex.EncodeToString(combinedMsg5[:])}.CalculateHash()
+	log.Println("combinedMsg5", hex.EncodeToString(combinedMsg5[:]), hex.EncodeToString(rootTmp5))
+
+	// for _, hash := range authPath.Hashes {
+	// 	log.Println(hex.EncodeToString(hash[:]))
+	// }
+	// 2022/04/07 12:31:02 03598c919b0c4b72083da7690b55a7566bb056245ef51a743333fb82d5705b58
+	// 2022/04/07 12:31:02 3ca78afbdd18e9ab6b7c1ee5d908f2e5af886549ad3ced9a276ddc49582d3925
+	// 2022/04/07 12:31:02 3640b54b987610170b8bf803cf385a9d92bc8ff782c7bf64f016621fe65d6329
+	// 2022/04/07 12:31:02 39a5bd5fa41e330694140a72f7fbda21b32d4b15ee65e442880d5a73505fb356
+	// 2022/04/07 12:31:02 23d78df0652e0eeb0f2a38f0918d07ced4937f2c4a8be90eea0949a520b0db15
+	// 2022/04/07 12:31:02 0ec2c8a47b1f6327c4fe42a8911eb939f2da0b870271b2ce65bed2434b85dded
+	// 2022/04/07 12:31:02 f4b10a0d204807556d6eb22468a1bc747ce3d270506c17f028bd30fe59e17ab6
+	// 2022/04/07 12:31:02 4f4db5d49f026d43a70330747c843307830bf9d9b1b42e5d5e8ccf40e4a05ff4
+	// 2022/04/07 12:31:02 fb8dea430a9da8c319f0bf89cac33e6b16030d57503c8f4d4bc148c5b03673ee
+	// 2022/04/07 12:31:02 d084db3416cb1196b6bf7ee0e7383361096b9811bb5cb088dde7c453efd4a1ce
+	// 2022/04/07 12:31:02 a7ec0cba4e85c9db65e7c67ee75dbb748d952859c1e12cfb433d3be849d19eca
+	combinedMsg := vrf.ConcatDigests((*[32]byte)(authPath.Hashes[8][:]), (*[32]byte)(authPath.Hashes[9][:])) // 1020,1021 -> 510
+	log.Println("1020+[1021] -> [510]", hex.EncodeToString(combinedMsg[:]))
+	happend := sha256.New()
+	b, err1 := happend.Write(append(authPath.Hashes[8][:], authPath.Hashes[9][:]...))
+	log.Println(b, err1)
+	log.Println("Append=====>", hex.EncodeToString(happend.Sum(nil)))
+	h := sha256.New()
+	h.Write(authPath.Hashes[8][:])
+	h.Write(authPath.Hashes[9][:])
+	var rv [sha256.Size]byte
+	copy(rv[:], h.Sum(nil))
+	log.Println("ConcatDigests=====>", hex.EncodeToString((&rv)[:]))
+	combinedMsg = vrf.ConcatDigests(combinedMsg, (*[32]byte)(authPath.Hashes[10][:])) // 510 - 511 -> 255
+	log.Println("[510] + 511 -> [255]", hex.EncodeToString(combinedMsg[:]))
+
+	combinedMsg = vrf.ConcatDigests((*[32]byte)(authPath.Hashes[7][:]), combinedMsg) // 254 - 255 -> 127
+	log.Println("254 + [255] -> [127]", hex.EncodeToString(combinedMsg[:]))
+
+	combinedMsg = vrf.ConcatDigests((*[32]byte)(authPath.Hashes[6][:]), combinedMsg) // 126 - 127 -> 63
+	log.Println("126 + [127] -> [63]", hex.EncodeToString(combinedMsg[:]))
+
+	combinedMsg = vrf.ConcatDigests((*[32]byte)(authPath.Hashes[5][:]), combinedMsg) // 62 - 63 -> 31
+	log.Println("62 + [63] -> [31]", hex.EncodeToString(combinedMsg[:]))
+
+	combinedMsg = vrf.ConcatDigests((*[32]byte)(authPath.Hashes[4][:]), combinedMsg) // 30 - 31 -> 15
+	log.Println("30 + [31] -> [15]", hex.EncodeToString(combinedMsg[:]))
+
+	combinedMsg = vrf.ConcatDigests((*[32]byte)(authPath.Hashes[3][:]), combinedMsg) // 14 - 15 -> 7
+	log.Println("14 + [15] -> [7]", hex.EncodeToString(combinedMsg[:]))
+
+	combinedMsg = vrf.ConcatDigests((*[32]byte)(authPath.Hashes[2][:]), combinedMsg) // 6 - 7 -> 3
+	log.Println("6 + [7] -> [3]", hex.EncodeToString(combinedMsg[:]))
+
+	combinedMsg = vrf.ConcatDigests((*[32]byte)(authPath.Hashes[1][:]), combinedMsg) // 2 - 3 -> 1
+	log.Println("2 + [3] -> [1]", hex.EncodeToString(combinedMsg[:]))
+
+	combinedMsg = vrf.ConcatDigests((*[32]byte)(authPath.Hashes[0][:]), combinedMsg) // 0 - 1 -> Root'
+
+	log.Println("0 + [1] -> [root']", hex.EncodeToString(combinedMsg[:]))
+	log.Println("PK", hex.EncodeToString(pk))
+	log.Println("PK'", hex.EncodeToString(combinedMsg[:]))
 }

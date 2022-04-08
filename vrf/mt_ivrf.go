@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
-	"github.com/cbergoon/merkletree"
 	"log"
 	"strconv"
 	"strings"
+
+	"github.com/cbergoon/merkletree"
 )
 
 // ParamGen to generate an implicit public parameter
@@ -30,7 +31,7 @@ func KeyGen(pp PublicParameter) (pubkey PublicKey, privkey PrivateKey, t *merkle
 	// 1. x00,x01, ... , x0t-1
 
 	//var rootList [][]byte
-	var rootList []merkletree.Content
+	var allLeaves []merkletree.Content
 	for i < pp.N {
 		// Xi,0 = Hash(r,i) => [x00,x10,x20,...,xN-1 0]
 		//xi0, _ := Message{Msg: hex.EncodeToString(r) + strconv.Itoa(int(i))}.CalculateHash()
@@ -60,13 +61,12 @@ func KeyGen(pp PublicParameter) (pubkey PublicKey, privkey PrivateKey, t *merkle
 		}
 		// 3. X0t, X1t,...XNt j = t
 		//log.Println("Index:", i, j)
-		rootList = append(rootList, Message{Msg: hex.EncodeToString(jRoot)})
+		allLeaves = append(allLeaves, Message{Msg: hex.EncodeToString(jRoot)})
 		i++
 	}
-	//log.Println("rootList", rootList)
 	// create a NEW Merkle Tree from the list of content
-	log.Println("Elements Number:", len(rootList))
-	tree, err := merkletree.NewTree(rootList)
+	log.Println("Elements Number:", len(allLeaves))
+	tree, err := merkletree.NewTree(allLeaves)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -150,41 +150,44 @@ func (pk PublicKey) Verify(mu [32]byte, leaveHashes []*[sha256.Size]byte, i, j i
 	copy(xit32[:], vrfProof)
 	log.Println("xit32", hex.EncodeToString(xit32[:]))
 	apXit := CalculateAuthPath(leaveHashes, &xit32)
-	log.Println("----------------->[i]", hex.EncodeToString(leaveHashes[i][:]))
 	apIndex := CalculateAuthPath(leaveHashes, leaveHashes[i])
-	for t, hash := range apIndex.Hashes {
-		log.Println(t, hex.EncodeToString(hash[:]))
+	// for t, hash := range apIndex.Hashes {
+	// 	log.Println(t, hex.EncodeToString(hash[:]))
+	// }
+	bitMap := Bytes2bits(ap.Flags)
+	log.Println("bitMap", bitMap)
+	// TODO Need to be updated soon
+	// //1021
+	// for idx := 0; idx < len(bitMap); {
+	// 	flag := Bytes2Int(bitMap[idx:idx+2], 1)
+	// 	log.Println(flag)
+	// 	if flag == 0 {
+	// 		log.Println("=====NOTHING=====")
+	// 	} else if flag == 1 {
+	// 		log.Println("=====Same Height, Select a left node=====")
+	// 	} else if flag == 2 {
+	// 		log.Printf("=====left=====")
+	// 	} else if flag == 3 {
+	// 		log.Printf("=====left=====")
+	// 	} else {
+	// 		log.Println("======WRONG=====")
+	// 	}
+	// 	idx += 2
+	// }
+	rootPrime := ConcatDigests(&apIndex.Hashes[8], &apIndex.Hashes[9])
+	rootPrime = ConcatDigests(rootPrime, &apIndex.Hashes[10])
+	for idx := 7; idx >= 0; idx-- {
+		log.Println(hex.EncodeToString((&apIndex.Hashes[idx])[:]), hex.EncodeToString((rootPrime)[:]))
+		rootPrime = ConcatDigests(&apIndex.Hashes[idx], rootPrime)
 	}
-	rootPrime := [32]byte{}
-	copy(rootPrime[:], apIndex.Hashes[9][:])
-	for idx := 8; idx >= 0; idx-- {
-		log.Println(hex.EncodeToString((&apIndex.Hashes[idx])[:]), hex.EncodeToString((&rootPrime)[:]))
-		combinedMsg := ConcatDigests(&apIndex.Hashes[idx], &rootPrime)
-		rootTmp, _ := Message{Msg: hex.EncodeToString(combinedMsg[:])}.CalculateHash()
-		copy(rootPrime[:], rootTmp)
-		log.Println(hex.EncodeToString(rootPrime[:]))
-	}
-
-	merkleRoot1, _ := VerifyAuthPath(apXit)
-	merkleRoot2, _ := VerifyAuthPath(ap)
-	merkleRoot3, _ := VerifyAuthPath(apIndex)
-	//log.Println(hex.EncodeToString(leaveHashes[1023][:]))
-	log.Println(merkleRoot1, merkleRoot2, merkleRoot3)
-	//calHash := &[32]byte{}
-	//03598c919b0c4b72083da7690b55a7566bb056245ef51a743333fb82d5705b58
-	//3ca78afbdd18e9ab6b7c1ee5d908f2e5af886549ad3ced9a276ddc49582d3925
-	//3640b54b987610170b8bf803cf385a9d92bc8ff782c7bf64f016621fe65d6329
-	//39a5bd5fa41e330694140a72f7fbda21b32d4b15ee65e442880d5a73505fb356
-	//23d78df0652e0eeb0f2a38f0918d07ced4937f2c4a8be90eea0949a520b0db15
-	//0ec2c8a47b1f6327c4fe42a8911eb939f2da0b870271b2ce65bed2434b85dded
-	//f4b10a0d204807556d6eb22468a1bc747ce3d270506c17f028bd30fe59e17ab6
-	//4f4db5d49f026d43a70330747c843307830bf9d9b1b42e5d5e8ccf40e4a05ff4
-	//e3597ccebdbe7cb69383734fc1066eb2f4dd2ae558ded1351ec295ee5fcf0a16
-	//d5e157dabb4f14491a00621068674819a523fea52867259a3597bab32d9e4467
-	//85283b8b63583757928973b30b52c966a894494ed9fbc69d3884fa1f5aba9271
-
-	log.Println(hex.EncodeToString(pk))
-	if bytes.Compare(merkleRoot1[:], merkleRoot2[:]) != 0 || bytes.Compare(merkleRoot1[:], pk) != 0 {
+	merkleRoot1, _ := VerifyAuthPath(apXit)   // Calculated by xi
+	merkleRoot2, _ := VerifyAuthPath(ap)      // Calculated by ap from Eval
+	merkleRoot3, _ := VerifyAuthPath(apIndex) // Calculated by index i
+	log.Println(hex.EncodeToString(merkleRoot1[:]), hex.EncodeToString(merkleRoot2[:]), hex.EncodeToString(merkleRoot3[:]))
+	log.Println("[RootPrime]", hex.EncodeToString(rootPrime[:]))
+	log.Println("[apXit]", hex.EncodeToString((&apXit.Hashes[0])[:]))
+	log.Println("[PK]", hex.EncodeToString(pk))
+	if (!bytes.Equal(merkleRoot1[:], rootPrime[:])) || (!bytes.Equal(merkleRoot2[:], rootPrime[:])) {
 		return 0
 	}
 	return 1

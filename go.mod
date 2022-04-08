@@ -4,7 +4,6 @@ go 1.17
 
 require (
 	github.com/cbergoon/merkletree v0.2.0
-	github.com/cloudflare/circl v1.1.0
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 )
 

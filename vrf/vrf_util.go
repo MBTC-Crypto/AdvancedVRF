@@ -4,8 +4,9 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"golang.org/x/crypto/sha3"
 	"math"
+
+	"golang.org/x/crypto/sha3"
 )
 
 func (m Message) CalculateHash() ([]byte, error) {
@@ -161,6 +162,28 @@ func bytes2bits(b []byte) []byte {
 	}
 
 	return bits
+}
+
+// bytes2bits converts merkle tree bitmap into a byte array.
+func Bytes2bits(b []byte) []byte {
+	bits := make([]byte, 0, len(b)*8)
+	for i := 0; i < len(b); i++ {
+		for j := uint(0); j < 8; j++ {
+			bits = append(bits, (b[i]>>j)&0x01)
+		}
+	}
+
+	return bits
+}
+
+// binary bytes to int by its shift
+func Bytes2Int(s []byte, shift int) int {
+	var res int
+	for _, v := range s {
+		res <<= shift
+		res |= int(v)
+	}
+	return res
 }
 
 // traverseAndBuild builds a partial merkle tree using a recursive depth-first
