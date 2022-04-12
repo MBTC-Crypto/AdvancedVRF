@@ -171,28 +171,14 @@ func (pk PublicKey) Verify(mu [32]byte, leaveHashes []*[sha256.Size]byte, i, j i
 		copy(rootPrime[:], rootTmp)
 		log.Println(hex.EncodeToString(rootPrime[:]))
 	}
-
 	merkleRoot1, _ := VerifyAuthPath(apXit)
 	merkleRoot2, _ := VerifyAuthPath(ap)
 	merkleRoot3, _ := VerifyAuthPath(apIndex)
-	//log.Println(hex.EncodeToString(leaveHashes[1023][:]))
 	log.Println(merkleRoot1, merkleRoot2, merkleRoot3)
 	log.Println(hex.EncodeToString(merkleRoot1[:]))
-	//calHash := &[32]byte{}
-	//03598c919b0c4b72083da7690b55a7566bb056245ef51a743333fb82d5705b58
-	//3ca78afbdd18e9ab6b7c1ee5d908f2e5af886549ad3ced9a276ddc49582d3925
-	//3640b54b987610170b8bf803cf385a9d92bc8ff782c7bf64f016621fe65d6329
-	//39a5bd5fa41e330694140a72f7fbda21b32d4b15ee65e442880d5a73505fb356
-	//23d78df0652e0eeb0f2a38f0918d07ced4937f2c4a8be90eea0949a520b0db15
-	//0ec2c8a47b1f6327c4fe42a8911eb939f2da0b870271b2ce65bed2434b85dded
-	//f4b10a0d204807556d6eb22468a1bc747ce3d270506c17f028bd30fe59e17ab6
-	//4f4db5d49f026d43a70330747c843307830bf9d9b1b42e5d5e8ccf40e4a05ff4
-	//e3597ccebdbe7cb69383734fc1066eb2f4dd2ae558ded1351ec295ee5fcf0a16
-	//d5e157dabb4f14491a00621068674819a523fea52867259a3597bab32d9e4467
-	//85283b8b63583757928973b30b52c966a894494ed9fbc69d3884fa1f5aba9271
 
 	log.Println(hex.EncodeToString(pk[:]))
-	if bytes.Compare(merkleRoot1[:], pk[:]) != 0 || bytes.Compare(merkleRoot1[:], pk[:]) != 0 {
+	if bytes.Compare(merkleRoot1[:], merkleRoot2[:]) != 0 || bytes.Compare(merkleRoot1[:], pk[:]) != 0 {
 		return 0
 	}
 	return 1
