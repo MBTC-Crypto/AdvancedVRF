@@ -15,7 +15,7 @@ func (m Message) Equals(other merkletree.Content) (bool, error) {
 }
 
 type PrivateKey []byte
-type PublicKey []byte
+type PublicKey [32]byte
 
 type Content interface {
 	CalculateHash() ([]byte, error)

@@ -23,8 +23,9 @@ func main() {
 		N: pg.N,
 	}
 	pk, sk, tree := vrf.KeyGen(pp)
+	//log.Println(tree)
 	//hex.EncodeToString(pk)
-	log.Println("pkv(Merkle Root):", hex.EncodeToString(pk), "skv(r):", hex.EncodeToString(sk))
+	log.Println("pkv(Merkle Root):", hex.EncodeToString(pk[:]), "skv(r):", hex.EncodeToString(sk))
 	vt, err := tree.VerifyTree()
 	if err != nil {
 		log.Fatal(err)
@@ -80,12 +81,13 @@ func main() {
 		}
 		log.Println("Verify Content:", vc)
 	}
-	//treePath, index, _ := tree.GetMerklePath(list1[8])
+	treePath, index, _ := tree.GetMerklePath(list1[8])
 	//log.Println("merklePath", merklePath)
-	//log.Println("Index", index)
-	//log.Println("TreePath", treePath)
-	// 0 [1] 2^10 = 1024 1023 1111 2^10 - 1024
+	log.Println("Index", index)
+	log.Println("TreePath", treePath)
+	//0 [1] 2^10 = 1024 1023 1111 2^10 - 1024
 	leavesHashArr := [1024]*[sha256.Size]byte{}
+
 	for i, _ := range tree.Leafs {
 		// Check two leaves have same parents
 		s := reflect.ValueOf(tree.Leafs[i].C)
@@ -97,42 +99,26 @@ func main() {
 	log.Println(tree.Leafs[1022].Parent == tree.Leafs[1023].Parent)
 	log.Println(tree.Leafs[1021].Parent == tree.Leafs[1020].Parent)
 
-	log.Println("PK", hex.EncodeToString(pk))
+	log.Println("PK", hex.EncodeToString(pk[:]))
 	log.Println("===================sk.Eval===================")
-	//log.Println(leavesHashArr[1023])
-	// 2de234baea20e96aeb604a008d049339c9b67da1bc64872b7703c498b383b673 996 16
-	// 3754d05c0a7ea22e80491b95efac123247ed06398027090496a1abac11e423d5 996 10
 	mu := "d084db3416cb1196b6bf7ee0e7383361096b9811bb5cb088dde7c453efd4a1ce" // 996 10
 	muHex, _ := hex.DecodeString(mu)
 	muHex32 := [32]byte{}
 	copy(muHex32[:], muHex)
 	i := 1021
 	j := 16
-	// v, pi(y,ap)
+	//v, pi(y,ap)
 	vrfValue, vrfProof, authPath := sk.Eval(muHex32, leavesHashArr[:], int32(i), int32(j))
 	log.Println("Output VRF Value", hex.EncodeToString(vrfValue))
 	log.Println("Output VRF Hex Value", vrfValue)
 	log.Println("Output VRF Proof", hex.EncodeToString(vrfProof))
-	//log.Println(authPath)
 	//get the path list1[6] 1023
 	log.Println("===================pk.Verify===================")
+	log.Println("=====authPath======", authPath)
 	//𝑦 is 𝑥𝑖,0 in above sk.Eval
-	// 5f79a6037e15bddf142030a9d16ca9b8fd59c62b46a58ace8d88026f81ee96a5
-	// ad42879f0f32ed23bd619fb592df1f0cab1a60e3145a4d693baa2edd25e3ae26 1023 7
-	// 5eb4ad5b053013918fddd1f121e36deb2ef102b76723e62f9602c5793f6641ec 1023 10
-	//mu2 := "5eb4ad5b053013918fddd1f121e36deb2ef102b76723e62f9602c5793f6641ec" // 1023 10
-	//mu2Hex, _ := hex.DecodeString(mu2)
-	//mu2Hex32 := [32]byte{}
-	//copy(mu2Hex32[:], mu2Hex)
 	m := 1021
 	n := 16
-	// mu, i,j,v, y,ap
+	//mu, i,j,v, y,ap
 	output := pk.Verify(muHex32, leavesHashArr[:], int32(m), int32(n), vrfValue, vrfProof, authPath)
 	log.Println("Verify result:", output)
-	//	log.Println(tree.Leafs[1022].C)
-	//	for i, _ := range tree.Leafs {
-	//		// Check two leaves have same parents
-	//		s := reflect.ValueOf(tree.Leafs[i].C)
-	//		log.Println(s.Interface().(vrf.Message).Msg)
-	//	}
 }

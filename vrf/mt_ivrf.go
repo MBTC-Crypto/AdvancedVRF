@@ -31,6 +31,7 @@ func KeyGen(pp PublicParameter) (pubkey PublicKey, privkey PrivateKey, t *merkle
 
 	//var rootList [][]byte
 	var rootList []merkletree.Content
+	var leaves = make([][32]byte, pp.N)
 	for i < pp.N {
 		// Xi,0 = Hash(r,i) => [x00,x10,x20,...,xN-1 0]
 		//xi0, _ := Message{Msg: hex.EncodeToString(r) + strconv.Itoa(int(i))}.CalculateHash()
@@ -61,6 +62,9 @@ func KeyGen(pp PublicParameter) (pubkey PublicKey, privkey PrivateKey, t *merkle
 		// 3. X0t, X1t,...XNt j = t
 		//log.Println("Index:", i, j)
 		rootList = append(rootList, Message{Msg: hex.EncodeToString(jRoot)})
+		leave := [32]byte{}
+		copy(leave[:], jRoot)
+		leaves[i] = leave
 		i++
 	}
 	//log.Println("rootList", rootList)
@@ -70,8 +74,11 @@ func KeyGen(pp PublicParameter) (pubkey PublicKey, privkey PrivateKey, t *merkle
 	if err != nil {
 		log.Fatal(err)
 	}
-	root := tree.MerkleRoot()
-	log.Println("Generated Merkle Root:", hex.EncodeToString(root))
+	//root := tree.MerkleRoot()
+	//log.Println("Generated Merkle Root:", hex.EncodeToString(root))
+	//var myRoot [32]byte
+	root := ComputeMerkleRoot(leaves)
+	log.Println("Generated Merkle Root:", hex.EncodeToString(root[:]))
 	return root, r, tree
 }
 
@@ -170,6 +177,7 @@ func (pk PublicKey) Verify(mu [32]byte, leaveHashes []*[sha256.Size]byte, i, j i
 	merkleRoot3, _ := VerifyAuthPath(apIndex)
 	//log.Println(hex.EncodeToString(leaveHashes[1023][:]))
 	log.Println(merkleRoot1, merkleRoot2, merkleRoot3)
+	log.Println(hex.EncodeToString(merkleRoot1[:]))
 	//calHash := &[32]byte{}
 	//03598c919b0c4b72083da7690b55a7566bb056245ef51a743333fb82d5705b58
 	//3ca78afbdd18e9ab6b7c1ee5d908f2e5af886549ad3ced9a276ddc49582d3925
@@ -183,8 +191,8 @@ func (pk PublicKey) Verify(mu [32]byte, leaveHashes []*[sha256.Size]byte, i, j i
 	//d5e157dabb4f14491a00621068674819a523fea52867259a3597bab32d9e4467
 	//85283b8b63583757928973b30b52c966a894494ed9fbc69d3884fa1f5aba9271
 
-	log.Println(hex.EncodeToString(pk))
-	if bytes.Compare(merkleRoot1[:], merkleRoot2[:]) != 0 || bytes.Compare(merkleRoot1[:], pk) != 0 {
+	log.Println(hex.EncodeToString(pk[:]))
+	if bytes.Compare(merkleRoot1[:], pk[:]) != 0 || bytes.Compare(merkleRoot1[:], pk[:]) != 0 {
 		return 0
 	}
 	return 1

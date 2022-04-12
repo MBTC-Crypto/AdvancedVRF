@@ -15,6 +15,8 @@ func Keygen(pp PublicParameter) (pubkey PublicKey, privkey PrivateKey, t *merkle
 	copy(r32[:], r)
 	var i int32 = 0
 	var rootList []merkletree.Content
+	var leaves = make([][32]byte, pp.N)
+
 	for i < pp.N {
 		i32 := [32]byte{}
 		copy(i32[:], strconv.Itoa(int(i)))
@@ -26,14 +28,17 @@ func Keygen(pp PublicParameter) (pubkey PublicKey, privkey PrivateKey, t *merkle
 		xi1, _ := Message{Msg: concatKeyMessage}.CalculateHash()
 		// 3. X01, X21,...Xn1
 		rootList = append(rootList, Message{Msg: hex.EncodeToString(xi1)})
+		leave := [32]byte{}
+		copy(leave[:], xi1)
+		leaves[i] = leave
 		i++
 	}
 	tree, err := merkletree.NewTree(rootList)
 	if err != nil {
 		log.Fatal(err)
 	}
-	root := tree.MerkleRoot()
-	log.Println("Generated Merkle Root:", hex.EncodeToString(root))
+	root := ComputeMerkleRoot(leaves)
+	log.Println("Generated Merkle Root:", hex.EncodeToString(root[:]))
 	return root, r, tree
 }
 

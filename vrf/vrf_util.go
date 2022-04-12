@@ -2,9 +2,11 @@ package vrf
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"golang.org/x/crypto/sha3"
+	"log"
 	"math"
 )
 
@@ -31,6 +33,30 @@ func ConcatDigests(hashes ...*[sha256.Size]byte) *[sha256.Size]byte {
 	var rv [sha256.Size]byte
 	copy(rv[:], h.Sum(nil))
 	return &rv
+}
+
+func ComputeMerkleRoot(leaveHashes [][32]byte) [32]byte {
+	numOfLeaves := len(leaveHashes)
+	log.Println("Num of Leaves:", numOfLeaves)
+	index := 0
+	//var leavesHashArr []*[sha256.Size]byte
+	tmpLen := numOfLeaves / 2
+	tempLeavesHashArr := make([][32]byte, tmpLen)
+	for i, _ := range leaveHashes {
+		if index < numOfLeaves {
+			intermediateHash := sha256.Sum256(append(leaveHashes[index][:], leaveHashes[index+1][:]...))
+			log.Println(i, index, index+1, numOfLeaves, intermediateHash, hex.EncodeToString(intermediateHash[:]))
+			tempLeavesHashArr[i] = intermediateHash
+			if numOfLeaves == 2 {
+				return intermediateHash
+			}
+			index += 2
+		} else {
+			log.Println("Completed Round", i)
+			break
+		}
+	}
+	return ComputeMerkleRoot(tempLeavesHashArr)
 }
 
 // calcTreeWidth calculates the width of the tree at a given height.
