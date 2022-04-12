@@ -35,19 +35,22 @@ func ConcatDigests(hashes ...*[sha256.Size]byte) *[sha256.Size]byte {
 	return &rv
 }
 
-func ComputeMerkleRoot(leaveHashes [][32]byte) [32]byte {
+func ComputeMerkleRoot(leaveHashes [][32]byte, intermediateHashes map[int][][32]byte) [32]byte {
 	numOfLeaves := len(leaveHashes)
 	log.Println("Num of Leaves:", numOfLeaves)
 	index := 0
-	//var leavesHashArr []*[sha256.Size]byte
-	tmpLen := numOfLeaves / 2
-	tempLeavesHashArr := make([][32]byte, tmpLen)
+	levelLen := numOfLeaves / 2
+	treeHeight := math.Log(float64(numOfLeaves)) / math.Log(2)
+	log.Println("treeHeight", treeHeight)
+	var tempLeavesHashArr = make([][32]byte, levelLen)
 	for i, _ := range leaveHashes {
 		if index < numOfLeaves {
 			intermediateHash := sha256.Sum256(append(leaveHashes[index][:], leaveHashes[index+1][:]...))
 			log.Println(i, index, index+1, numOfLeaves, intermediateHash, hex.EncodeToString(intermediateHash[:]))
 			tempLeavesHashArr[i] = intermediateHash
 			if numOfLeaves == 2 {
+				intermediateHashes[int(treeHeight)] = tempLeavesHashArr
+				//log.Println("*****", treeHeight, intermediateHashes)
 				return intermediateHash
 			}
 			index += 2
@@ -56,7 +59,12 @@ func ComputeMerkleRoot(leaveHashes [][32]byte) [32]byte {
 			break
 		}
 	}
-	return ComputeMerkleRoot(tempLeavesHashArr)
+	if treeHeight == 10 {
+		intermediateHashes[int(treeHeight)] = leaveHashes
+	} else {
+		intermediateHashes[int(treeHeight)] = tempLeavesHashArr
+	}
+	return ComputeMerkleRoot(tempLeavesHashArr, intermediateHashes)
 }
 
 // calcTreeWidth calculates the width of the tree at a given height.

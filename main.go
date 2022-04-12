@@ -109,16 +109,16 @@ func main() {
 
 	log.Println("PK", hex.EncodeToString(pk[:]))
 	log.Println("===================sk.Eval===================")
-	mu := "d084db3416cb1196b6bf7ee0e7383361096b9811bb5cb088dde7c453efd4a1ce" // 996 10
+	//mu := "d084db3416cb1196b6bf7ee0e7383361096b9811bb5cb088dde7c453efd4a1ce" // 996 16
 	//log.Println(leavesHashArr[1023])
 	// 2de234baea20e96aeb604a008d049339c9b67da1bc64872b7703c498b383b673 996 16
 	// 3754d05c0a7ea22e80491b95efac123247ed06398027090496a1abac11e423d5 996 10
-	//mu := "e0d4ee2f28307ba10d3284b1f35205e1f193779d5d9834e1e2c0f1343df8c3b0" // 1021 10
+	mu := "05d7a65aac6b5622dd980e8164bc2623ba1a075111993a55acb3869132475e38" // 1021 10
 	muHex, _ := hex.DecodeString(mu)
 	muHex32 := [32]byte{}
 	copy(muHex32[:], muHex)
 	i := 1021
-	j := 16
+	j := 10
 	//v, pi(y,ap)
 	vrfValue, vrfProof, authPath := sk.Eval(muHex32, leavesHashArr[:], int32(i), int32(j))
 	log.Println("Output VRF Value", hex.EncodeToString(vrfValue))
@@ -129,7 +129,7 @@ func main() {
 	log.Println("=====authPath======", authPath)
 	//𝑦 is 𝑥𝑖,0 in above sk.Eval
 	m := 1021
-	n := 16
+	n := 10
 	//mu, i,j,v, y,ap
 	output := pk.Verify(muHex32, leavesHashArr[:], int32(m), int32(n), vrfValue, vrfProof, authPath)
 	log.Println("Verify result:", output)

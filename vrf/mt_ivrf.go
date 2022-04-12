@@ -77,8 +77,10 @@ func KeyGen(pp PublicParameter) (pubkey PublicKey, privkey PrivateKey, t *merkle
 	//root := tree.MerkleRoot()
 	//log.Println("Generated Merkle Root:", hex.EncodeToString(root))
 	//var myRoot [32]byte
-	root := ComputeMerkleRoot(leaves)
+	var intermediateHashes = make(map[int][][32]byte)
+	root := ComputeMerkleRoot(leaves, intermediateHashes)
 	log.Println("Generated Merkle Root:", hex.EncodeToString(root[:]))
+	log.Println("intermediateHashes", len(intermediateHashes[4]))
 	return root, r, tree
 }
 
