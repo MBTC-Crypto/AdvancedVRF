@@ -80,7 +80,9 @@ func KeyGen(pp PublicParameter) (pubkey PublicKey, privkey PrivateKey, t *merkle
 	var intermediateHashes = make(map[int][][32]byte)
 	root := ComputeMerkleRoot(leaves, intermediateHashes)
 	log.Println("Generated Merkle Root:", hex.EncodeToString(root[:]))
-	log.Println("intermediateHashes", len(intermediateHashes[4]))
+	for treeHeight := 1; treeHeight <= len(intermediateHashes); treeHeight++ {
+		log.Println("intermediateHash=====", treeHeight, len(intermediateHashes[treeHeight]), intermediateHashes[treeHeight])
+	}
 	return root, r, tree
 }
 
@@ -126,60 +128,76 @@ func (sk PrivateKey) Eval(mu [32]byte, leaveHashes []*[sha256.Size]byte, i, j in
 }
 
 func (pk PublicKey) Verify(mu [32]byte, leaveHashes []*[sha256.Size]byte, i, j int32, vrfValue, vrfProof []byte, ap *Branch) int {
-	log.Println("Output VrfValue:", hex.EncodeToString(vrfValue))
-	log.Println("Output VrfProof:", hex.EncodeToString(vrfProof))
+	//log.Println("Output VrfValue:", hex.EncodeToString(vrfValue))
+	//log.Println("Output VrfProof:", hex.EncodeToString(vrfProof))
 	// y-value
 	vrfProof32 := [32]byte{}
 	copy(vrfProof32[:], vrfProof)
-	log.Println("Output VrfProof32:", hex.EncodeToString(vrfProof32[:]))
+	//log.Println("Output VrfProof32:", hex.EncodeToString(vrfProof32[:]))
 	yMessage := hex.EncodeToString(ConcatDigests(&vrfProof32, &mu)[:])
 	newVrfProof32, _ := Message{Msg: yMessage}.CalculateHash()
-	log.Println("Output newVrfProof32:", hex.EncodeToString(newVrfProof32))
+	//log.Println("Output newVrfProof32:", hex.EncodeToString(newVrfProof32))
 	// check if v != H(y,mu)
-	res := bytes.Compare(vrfValue, newVrfProof32)
-	if res == 0 {
-		log.Println("NewVrfValue and VrfValue are equal!")
-	} else {
+	if !bytes.Equal(vrfValue, newVrfProof32) {
 		log.Println("NewVrfValue and VrfValue are not equal!")
 		return 0
 	}
 	// Compare v == H(y,x)
-	log.Println("newVrfProof", hex.EncodeToString(newVrfProof32))
-	log.Println("OrigVRFValue:", hex.EncodeToString(vrfValue))
+	//log.Println("newVrfProof", hex.EncodeToString(newVrfProof32))
+	//log.Println("OrigVRFValue:", hex.EncodeToString(vrfValue))
 	// Compute xit = H^j+1(y)
 	iter := j + 1
 	xit32 := [32]byte{}
-	log.Println("[xit32]-Before:", hex.EncodeToString(xit32[:]))
+	//log.Println("[xit32]-Before:", hex.EncodeToString(xit32[:]))
 	for iter > 0 {
 		vrfProof, _ = Message{Msg: hex.EncodeToString(vrfProof)}.CalculateHash()
 		iter--
 	}
-	log.Println("[xit32]-After:", hex.EncodeToString(vrfProof))
+	//log.Println("[xit32]-After:", hex.EncodeToString(vrfProof))
 	// Compute Merkel root pk' by xi through AP, then compare pk' and pk
 	copy(xit32[:], vrfProof)
-	log.Println("xit32", hex.EncodeToString(xit32[:]))
+	//log.Println("xit32", hex.EncodeToString(xit32[:]))
 	apXit := CalculateAuthPath(leaveHashes, &xit32)
-	log.Println("----------------->[i]", hex.EncodeToString(leaveHashes[i][:]))
+	//log.Println("----------------->[i]", hex.EncodeToString(leaveHashes[i][:]))
 	apIndex := CalculateAuthPath(leaveHashes, leaveHashes[i])
-	for t, hash := range apIndex.Hashes {
-		log.Println(t, hex.EncodeToString(hash[:]))
-	}
-	rootPrime := [32]byte{}
-	copy(rootPrime[:], apIndex.Hashes[9][:])
-	for idx := 8; idx >= 0; idx-- {
-		log.Println(hex.EncodeToString((&apIndex.Hashes[idx])[:]), hex.EncodeToString((&rootPrime)[:]))
-		combinedMsg := ConcatDigests(&apIndex.Hashes[idx], &rootPrime)
-		rootTmp, _ := Message{Msg: hex.EncodeToString(combinedMsg[:])}.CalculateHash()
-		copy(rootPrime[:], rootTmp)
-		log.Println(hex.EncodeToString(rootPrime[:]))
-	}
+	//for t, hash := range apIndex.Hashes {
+	//	log.Println(t, hex.EncodeToString(hash[:]))
+	//}
+	combinedMsg := ConcatDigests((*[32]byte)(ap.Hashes[8][:]), (*[32]byte)(ap.Hashes[9][:])) // 1020,1021 -> 510
+	log.Println("1020+[1021] -> [510]", hex.EncodeToString(combinedMsg[:]))
+	combinedMsg = ConcatDigests(combinedMsg, (*[32]byte)(ap.Hashes[10][:])) // 510 - 511 -> 255
+	log.Println("[510] + 511 -> [255]", hex.EncodeToString(combinedMsg[:]))
+
+	combinedMsg = ConcatDigests((*[32]byte)(ap.Hashes[7][:]), combinedMsg) // 254 - 255 -> 127
+	log.Println("254 + [255] -> [127]", hex.EncodeToString(combinedMsg[:]))
+
+	combinedMsg = ConcatDigests((*[32]byte)(ap.Hashes[6][:]), combinedMsg) // 126 - 127 -> 63
+	log.Println("126 + [127] -> [63]", hex.EncodeToString(combinedMsg[:]))
+
+	combinedMsg = ConcatDigests((*[32]byte)(ap.Hashes[5][:]), combinedMsg) // 62 - 63 -> 31
+	log.Println("62 + [63] -> [31]", hex.EncodeToString(combinedMsg[:]))
+
+	combinedMsg = ConcatDigests((*[32]byte)(ap.Hashes[4][:]), combinedMsg) // 30 - 31 -> 15
+	log.Println("30 + [31] -> [15]", hex.EncodeToString(combinedMsg[:]))
+
+	combinedMsg = ConcatDigests((*[32]byte)(ap.Hashes[3][:]), combinedMsg) // 14 - 15 -> 7
+	log.Println("14 + [15] -> [7]", hex.EncodeToString(combinedMsg[:]))
+
+	combinedMsg = ConcatDigests((*[32]byte)(ap.Hashes[2][:]), combinedMsg) // 6 - 7 -> 3
+	log.Println("6 + [7] -> [3]", hex.EncodeToString(combinedMsg[:]))
+
+	combinedMsg = ConcatDigests((*[32]byte)(ap.Hashes[1][:]), combinedMsg) // 2 - 3 -> 1
+	log.Println("2 + [3] -> [1]", hex.EncodeToString(combinedMsg[:]))
+
+	combinedMsg = ConcatDigests((*[32]byte)(ap.Hashes[0][:]), combinedMsg) // 0 - 1 -> Root'
 	merkleRoot1, _ := VerifyAuthPath(apXit)
 	merkleRoot2, _ := VerifyAuthPath(ap)
 	merkleRoot3, _ := VerifyAuthPath(apIndex)
-	log.Println(merkleRoot1, merkleRoot2, merkleRoot3)
-	log.Println(hex.EncodeToString(merkleRoot1[:]))
-
-	log.Println(hex.EncodeToString(pk[:]))
+	log.Println("merkleRoot1:", hex.EncodeToString(merkleRoot1[:]))
+	log.Println("merkleRoot2:", hex.EncodeToString(merkleRoot2[:]))
+	log.Println("merkleRoot3:", hex.EncodeToString(merkleRoot3[:]))
+	log.Println("rootPrime:", hex.EncodeToString(combinedMsg[:]))
+	log.Println("Pk:", hex.EncodeToString(pk[:]))
 	if bytes.Compare(merkleRoot1[:], merkleRoot2[:]) != 0 || bytes.Compare(merkleRoot1[:], pk[:]) != 0 {
 		return 0
 	}
