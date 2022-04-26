@@ -156,9 +156,8 @@ func (pk PublicKey) Verify(mu [32]byte, leaveHashes []*[sha256.Size]byte, i, j i
 	//log.Println("[xit32]-After:", hex.EncodeToString(vrfProof))
 	// Compute Merkel root pk' by xi through AP, then compare pk' and pk
 	copy(xit32[:], vrfProof)
-	//log.Println("xit32", hex.EncodeToString(xit32[:]))
+	log.Println("xit32", hex.EncodeToString(xit32[:]))
 	apXit := CalculateAuthPath(leaveHashes, &xit32)
-	//log.Println("----------------->[i]", hex.EncodeToString(leaveHashes[i][:]))
 	apIndex := CalculateAuthPath(leaveHashes, leaveHashes[i])
 	//for t, hash := range apIndex.Hashes {
 	//	log.Println(t, hex.EncodeToString(hash[:]))

@@ -1,6 +1,7 @@
 package vrf
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -18,6 +19,19 @@ func (m Message) CalculateHash() ([]byte, error) {
 	return h.Sum(nil), nil
 }
 
+func CalculateHash(msg []byte) ([]byte, error) {
+	h := sha256.New()
+	if _, err := h.Write(msg); err != nil {
+		return nil, err
+	}
+	return h.Sum(nil), nil
+}
+
+func GenRandomBytes(size int) (blk []byte, err error) {
+	blk = make([]byte, size)
+	_, err = rand.Read(blk)
+	return
+}
 func (m Message) CalculateShake() ([]byte, error) {
 	buf := []byte(m.Msg)
 	h := make([]byte, len(buf))

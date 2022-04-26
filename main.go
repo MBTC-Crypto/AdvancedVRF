@@ -83,15 +83,9 @@ func main() {
 		log.Println("Verify Content:", vc)
 	}
 	treePath, index, _ := tree.GetMerklePath(list1[8])
-	//log.Println("merklePath", merklePath)
 	log.Println("Index", index)
 	log.Println("TreePath", treePath)
-	//0 [1] 2^10 = 1024 1023 1111 2^10 - 1024
 	leavesHashArr := [1024]*[sha256.Size]byte{}
-
-	//for i, _ := range tree.Leafs {
-	//log.Println("Index", index)
-	//log.Println("TreePath", treePath)
 	// 0 [1] 2^10 = 1024 1023 1111 2^10 - 1024
 	log.Println(tree.Leafs)
 	for i, node := range tree.Leafs {
@@ -133,4 +127,6 @@ func main() {
 	//mu, i,j,v, y,ap
 	output := pk.Verify(muHex32, leavesHashArr[:], int32(m), int32(n), vrfValue, vrfProof, authPath)
 	log.Println("Verify result:", output)
+	randBytes, _ := vrf.GenRandomBytes(32)
+	log.Println(randBytes)
 }
