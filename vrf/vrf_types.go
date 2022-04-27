@@ -14,8 +14,9 @@ func (m Message) Equals(other merkletree.Content) (bool, error) {
 	return m.Msg == other.(Message).Msg, nil
 }
 
-type PrivateKey []byte
+type PrivateKey [64]byte
 type PublicKey [32]byte
+type VrfProof [64]byte
 
 type Content interface {
 	CalculateHash() ([]byte, error)

@@ -3,7 +3,6 @@ package vrf
 import (
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"golang.org/x/crypto/sha3"
@@ -19,12 +18,12 @@ func (m Message) CalculateHash() ([]byte, error) {
 	return h.Sum(nil), nil
 }
 
-func CalculateHash(msg []byte) ([]byte, error) {
+func CalculateHash(msg []byte) []byte {
 	h := sha256.New()
 	if _, err := h.Write(msg); err != nil {
-		return nil, err
+		return nil
 	}
-	return h.Sum(nil), nil
+	return h.Sum(nil)
 }
 
 func GenRandomBytes(size int) (blk []byte, err error) {
@@ -49,19 +48,19 @@ func ConcatDigests(hashes ...*[sha256.Size]byte) *[sha256.Size]byte {
 	return &rv
 }
 
-func ComputeMerkleRoot(leaveHashes [][32]byte, intermediateHashes map[int][][32]byte) [32]byte {
+func ComputeMerkleRoot(leaveHashes [][]byte, intermediateHashes map[int][][]byte) [32]byte {
 	numOfLeaves := len(leaveHashes)
 	log.Println("Num of Leaves:", numOfLeaves)
 	index := 0
 	levelLen := numOfLeaves / 2
 	treeHeight := math.Log(float64(numOfLeaves)) / math.Log(2)
-	log.Println("treeHeight", treeHeight)
-	var tempLeavesHashArr = make([][32]byte, levelLen)
+	//log.Println("treeHeight", treeHeight)
+	var tempLeavesHashArr = make([][]byte, levelLen)
 	for i, _ := range leaveHashes {
 		if index < numOfLeaves {
 			intermediateHash := sha256.Sum256(append(leaveHashes[index][:], leaveHashes[index+1][:]...))
-			log.Println(i, index, index+1, numOfLeaves, intermediateHash, hex.EncodeToString(intermediateHash[:]))
-			tempLeavesHashArr[i] = intermediateHash
+			//log.Println(i, index, index+1, numOfLeaves, intermediateHash, hex.EncodeToString(intermediateHash[:]))
+			tempLeavesHashArr[i] = intermediateHash[:]
 			if numOfLeaves == 2 {
 				intermediateHashes[int(treeHeight)] = tempLeavesHashArr
 				//log.Println("*****", treeHeight, intermediateHashes)

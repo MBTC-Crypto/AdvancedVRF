@@ -2,33 +2,30 @@ package vrf
 
 import (
 	"crypto/sha256"
-	"github.com/cbergoon/merkletree"
 	"reflect"
 	"testing"
 )
 
 func TestKeyGen(t *testing.T) {
-	type args struct {
-		pp PublicParameter
-	}
-	var tests []struct {
-		name        string
-		args        args
-		wantPubkey  PublicKey
-		wantPrivkey PrivateKey
-		wantT       *merkletree.MerkleTree
+	tests := []struct {
+		name            string
+		wantPubkey      PublicKey
+		wantPrivkey     PrivateKey
+		wantLeaveHashes [][]byte
+	}{
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotPubkey, gotPrivkey, gotT := KeyGen(tt.args.pp)
+			gotPubkey, gotPrivkey, gotLeaveHashes := KeyGen()
 			if !reflect.DeepEqual(gotPubkey, tt.wantPubkey) {
 				t.Errorf("KeyGen() gotPubkey = %v, want %v", gotPubkey, tt.wantPubkey)
 			}
 			if !reflect.DeepEqual(gotPrivkey, tt.wantPrivkey) {
 				t.Errorf("KeyGen() gotPrivkey = %v, want %v", gotPrivkey, tt.wantPrivkey)
 			}
-			if !reflect.DeepEqual(gotT, tt.wantT) {
-				t.Errorf("KeyGen() gotT = %v, want %v", gotT, tt.wantT)
+			if !reflect.DeepEqual(gotLeaveHashes, tt.wantLeaveHashes) {
+				t.Errorf("KeyGen() gotLeaveHashes = %v, want %v", gotLeaveHashes, tt.wantLeaveHashes)
 			}
 		})
 	}
@@ -38,10 +35,12 @@ func TestParamGen(t *testing.T) {
 	type args struct {
 		s string
 	}
-	var tests []struct {
+	tests := []struct {
 		name  string
 		args  args
 		wantP *PublicParameter
+	}{
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -59,25 +58,27 @@ func TestPrivateKey_Eval(t *testing.T) {
 		i           int32
 		j           int32
 	}
-	var tests []struct {
-		name         string
-		sk           PrivateKey
-		args         args
-		wantVrfValue []byte
-		wantVrfProof []byte
-		wantMb       *Branch
+	tests := []struct {
+		name      string
+		sk        PrivateKey
+		args      args
+		wantProof VrfProof
+		wantOk    bool
+		wantAp    *Branch
+	}{
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotVrfValue, gotVrfProof, gotMb := tt.sk.Eval(tt.args.mu, tt.args.leaveHashes, tt.args.i, tt.args.j)
-			if !reflect.DeepEqual(gotVrfValue, tt.wantVrfValue) {
-				t.Errorf("Eval() gotVrfValue = %v, want %v", gotVrfValue, tt.wantVrfValue)
+			gotProof, gotOk, gotAp := tt.sk.Eval(tt.args.mu, tt.args.leaveHashes, tt.args.i, tt.args.j)
+			if !reflect.DeepEqual(gotProof, tt.wantProof) {
+				t.Errorf("Eval() gotProof = %v, want %v", gotProof, tt.wantProof)
 			}
-			if !reflect.DeepEqual(gotVrfProof, tt.wantVrfProof) {
-				t.Errorf("Eval() gotVrfProof = %v, want %v", gotVrfProof, tt.wantVrfProof)
+			if gotOk != tt.wantOk {
+				t.Errorf("Eval() gotOk = %v, want %v", gotOk, tt.wantOk)
 			}
-			if !reflect.DeepEqual(gotMb, tt.wantMb) {
-				t.Errorf("Eval() gotMb = %v, want %v", gotMb, tt.wantMb)
+			if !reflect.DeepEqual(gotAp, tt.wantAp) {
+				t.Errorf("Eval() gotAp = %v, want %v", gotAp, tt.wantAp)
 			}
 		})
 	}
@@ -89,19 +90,20 @@ func TestPublicKey_Verify(t *testing.T) {
 		leaveHashes []*[sha256.Size]byte
 		i           int32
 		j           int32
-		vrfValue    []byte
-		vrfProof    []byte
-		mb          *Branch
+		proof       VrfProof
+		ap          *Branch
 	}
-	var tests []struct {
+	tests := []struct {
 		name string
 		pk   PublicKey
 		args args
 		want int
+	}{
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.pk.Verify(tt.args.mu, tt.args.leaveHashes, tt.args.i, tt.args.j, tt.args.vrfValue, tt.args.vrfProof, tt.args.mb); got != tt.want {
+			if got := tt.pk.Verify(tt.args.mu, tt.args.leaveHashes, tt.args.i, tt.args.j, tt.args.proof, tt.args.ap); got != tt.want {
 				t.Errorf("Verify() = %v, want %v", got, tt.want)
 			}
 		})
